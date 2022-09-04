@@ -19,6 +19,6 @@ Feature: Http Server
 
     Scenario: pathMatches('/redirect') && methodIs('GET')
         * def responseStatus = parseInt(requestParams.count) == 0 ? 200 : 307
-        * def location = `${requestUrlBase}/redirect?count=${parseInt(requestParams.count) - 1}`
+        * def location = `/redirect?count=${parseInt(requestParams.count) - 1}`
         * def responseHeaders = { 'Location': #(location) }
         * def response = `OK ${parseInt(requestParams.count)}`

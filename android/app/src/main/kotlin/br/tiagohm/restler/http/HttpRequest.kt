@@ -6,6 +6,7 @@ import okhttp3.RequestBody
 import okhttp3.internal.EMPTY_REQUEST
 
 data class HttpRequest(
+    val uid: String?,
     val method: String,
     val uri: String,
     val body: ByteArray?,
@@ -31,6 +32,7 @@ data class HttpRequest(
 
         other as HttpRequest
 
+        if (uid != other.uid) return false
         if (method != other.method) return false
         if (uri != other.uri) return false
         if (body != null) {
@@ -43,7 +45,8 @@ data class HttpRequest(
     }
 
     override fun hashCode(): Int {
-        var result = method.hashCode()
+        var result = uid?.hashCode() ?: 0
+        result = 31 * result + method.hashCode()
         result = 31 * result + uri.hashCode()
         result = 31 * result + (body?.contentHashCode() ?: 0)
         result = 31 * result + connection.hashCode()
@@ -53,10 +56,11 @@ data class HttpRequest(
     companion object {
 
         fun from(call: MethodCall): HttpRequest {
+            val uid = call.stringOrNull("uid")
             val method = call.stringOrNull("method") ?: "GET"
             val uri = call.stringNotBlank("uri")
             val connection = call.json<HttpConnection>("connection") ?: HttpConnection.DEFAULT
-            return HttpRequest(method, uri, null, connection)
+            return HttpRequest(uid, method, uri, null, connection)
         }
     }
 }

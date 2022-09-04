@@ -11,8 +11,9 @@ import java.util.concurrent.*
 class HttpCallHandler : MethodChannel.MethodCallHandler {
 
     private var channel: MethodChannel? = null
-    private var connectionPool: ConnectionPool? = null
+    private val connectionPool = ConnectionPool(32, 5L, TimeUnit.MINUTES)
     private val cachedHttpClient = HashMap<HttpConnection, OkHttpClient>()
+    private val cancellableCall = HashMap<String, Pair<Call, MethodChannel.Result>>()
 
     fun startListening(messenger: BinaryMessenger) {
         if (channel != null) stopListening()
@@ -25,28 +26,22 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         channel?.setMethodCallHandler(null)
         channel = null
 
-        connectionPool?.evictAll()
-        connectionPool = null
+        connectionPool.evictAll()
 
         cachedHttpClient.clear()
+        cancellableCall.clear()
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
             when (call.method) {
-                "execute" -> execute(HttpRequest.from(call), result)
+                "execute" -> execute(HttpRequest.from(call), OneShotResult(result))
+                "cancel" -> cancel(call.stringNotBlank("uid"), result)
                 else -> return result.notImplemented()
             }
         } catch (e: Throwable) {
             e.printStackTrace()
             result.error("ERROR", e.message, null)
-        }
-    }
-
-    @Synchronized
-    private fun createConnectionPool() {
-        if (connectionPool == null) {
-            connectionPool = ConnectionPool(32, 5L, TimeUnit.MINUTES)
         }
     }
 
@@ -60,7 +55,7 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
             .connectTimeout(connection.connectTimeout, TimeUnit.MILLISECONDS)
             .readTimeout(connection.readTimeout, TimeUnit.MILLISECONDS)
             .writeTimeout(connection.writeTimeout, TimeUnit.MILLISECONDS)
-            .connectionPool(connectionPool!!)
+            .connectionPool(connectionPool)
             .build()
             .also { cachedHttpClient[connection] = it }
     }
@@ -69,15 +64,37 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         httpRequest: HttpRequest,
         result: MethodChannel.Result,
     ) {
-        createConnectionPool()
         val client = createHttpClient(httpRequest.connection)
         val request = httpRequest.toRequest()
         val call = client.newCall(request)
-        val callback = HttpCallback(result)
+
+        httpRequest.uid?.also { cancellableCall[it] = call to result }
+
+        val callback = HttpCallback(httpRequest, result)
         call.enqueue(callback)
     }
 
-    private class HttpCallback(private val result: MethodChannel.Result) : Callback {
+    private fun cancel(
+        uid: String,
+        result: MethodChannel.Result,
+    ) {
+        val (call, callResult) = cancellableCall[uid] ?: return result.success(null)
+
+        synchronized(call) {
+            if (!call.isCanceled()) {
+                call.cancel()
+                callResult.error("ERROR", "cancel", null)
+                result.success(true)
+            } else {
+                result.success(false)
+            }
+        }
+    }
+
+    private inner class HttpCallback(
+        private val httpRequest: HttpRequest,
+        private val result: MethodChannel.Result,
+    ) : Callback {
 
         override fun onFailure(
             call: Call,
@@ -85,6 +102,7 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         ) {
             e.printStackTrace()
             result.error("ERROR", e.message, null)
+            onComplete(call)
         }
 
         override fun onResponse(
@@ -93,6 +111,13 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         ) {
             val body = response.body?.bytes() ?: EMPTY_BYTE_ARRAY
             result.success(HttpResponse(response.code, body))
+            onComplete(call)
+        }
+
+        private fun onComplete(call: Call) {
+            synchronized(call) {
+                cancellableCall.remove(httpRequest.uid)
+            }
         }
     }
 }
