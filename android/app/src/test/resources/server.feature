@@ -12,3 +12,13 @@ Feature: Http Server
     Scenario: pathMatches('/delay') && methodIs('GET')
         * sleep(requestParams.delay)
         * def response = 'OK'
+
+    Scenario: pathMatches('/status') && methodIs('GET')
+        * def responseStatus = parseInt(requestParams.status)
+        * def response = 'OK'
+
+    Scenario: pathMatches('/redirect') && methodIs('GET')
+        * def responseStatus = parseInt(requestParams.count) == 0 ? 200 : 307
+        * def location = `${requestUrlBase}/redirect?count=${parseInt(requestParams.count) - 1}`
+        * def responseHeaders = { 'Location': #(location) }
+        * def response = `OK ${parseInt(requestParams.count)}`

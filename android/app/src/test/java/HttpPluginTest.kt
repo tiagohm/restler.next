@@ -24,25 +24,52 @@ class HttpPluginTest {
     }
 
     @Test
-    fun simpleRequest() {
+    fun simple() {
         val args = mapOf("uri" to "http://localhost:8080/name")
         val result = execute(args)
         verify(result, times(1)).success(HttpResponse(200, "Anonymous".toByteArray()))
     }
 
     @Test
-    fun requestWithQueryParameter() {
+    fun queryParameter() {
         val args = mapOf("uri" to "http://localhost:8080/name?name=Tiago")
         val result = execute(args)
         verify(result, times(1)).success(HttpResponse(200, "Tiago".toByteArray()))
     }
 
     @Test
-    fun requestWithCallTimeout() {
+    fun callTimeout() {
         val connection = JSON.writeValueAsString(HttpConnection(callTimeout = 1000L))
         val args = mapOf("uri" to "http://localhost:8080/delay?delay=5", "connection" to connection)
         val result = execute(args)
         verify(result, times(1)).error(eq("ERROR"), eq("timeout"), eq(null))
+    }
+
+    @Test
+    fun status() {
+        val statuses = listOf(201, 301, 404, 500, 799)
+
+        for (status in statuses) {
+            val args = mapOf("uri" to "http://localhost:8080/status?status=$status")
+            val result = execute(args)
+            verify(result, times(1)).success(HttpResponse(status, "OK".toByteArray()))
+        }
+    }
+
+    @Test
+    fun dontFollowRedirect() {
+        val connection = JSON.writeValueAsString(HttpConnection(followRedirects = false))
+        val args = mapOf("uri" to "http://localhost:8080/redirect?count=2", "connection" to connection)
+        val result = execute(args)
+        verify(result, times(1)).success(HttpResponse(307, "OK 2".toByteArray()))
+    }
+
+    @Test
+    fun followRedirect() {
+        val connection = JSON.writeValueAsString(HttpConnection(followRedirects = true))
+        val args = mapOf("uri" to "http://localhost:8080/redirect?count=2", "connection" to connection)
+        val result = execute(args)
+        verify(result, times(1)).success(HttpResponse(200, "OK 0".toByteArray()))
     }
 
     companion object {

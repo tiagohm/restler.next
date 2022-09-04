@@ -38,6 +38,7 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
                 else -> return result.notImplemented()
             }
         } catch (e: Throwable) {
+            e.printStackTrace()
             result.error("ERROR", e.message, null)
         }
     }
@@ -82,6 +83,7 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
             call: Call,
             e: IOException,
         ) {
+            e.printStackTrace()
             result.error("ERROR", e.message, null)
         }
 
