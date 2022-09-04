@@ -55,10 +55,10 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         else OkHttpClient.Builder()
             .followRedirects(connection.followRedirects)
             .followSslRedirects(connection.followSslRedirects)
-            .callTimeout(connection.callTimeout, TimeUnit.SECONDS)
-            .connectTimeout(connection.connectTimeout, TimeUnit.SECONDS)
-            .readTimeout(connection.readTimeout, TimeUnit.SECONDS)
-            .writeTimeout(connection.writeTimeout, TimeUnit.SECONDS)
+            .callTimeout(connection.callTimeout, TimeUnit.MILLISECONDS)
+            .connectTimeout(connection.connectTimeout, TimeUnit.MILLISECONDS)
+            .readTimeout(connection.readTimeout, TimeUnit.MILLISECONDS)
+            .writeTimeout(connection.writeTimeout, TimeUnit.MILLISECONDS)
             .connectionPool(connectionPool!!)
             .build()
             .also { cachedHttpClient[connection] = it }
@@ -69,7 +69,7 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         result: MethodChannel.Result,
     ) {
         createConnectionPool()
-        val client = createHttpClient(HttpConnection.DEFAULT)
+        val client = createHttpClient(httpRequest.connection)
         val request = httpRequest.toRequest()
         val call = client.newCall(request)
         val callback = HttpCallback(result)

@@ -9,6 +9,7 @@ data class HttpRequest(
     val method: String,
     val uri: String,
     val body: ByteArray?,
+    val connection: HttpConnection = HttpConnection.DEFAULT,
 ) {
 
     private fun makeRequestBody(): RequestBody? {
@@ -36,6 +37,7 @@ data class HttpRequest(
             if (other.body == null) return false
             if (!body.contentEquals(other.body)) return false
         } else if (other.body != null) return false
+        if (connection != other.connection) return false
 
         return true
     }
@@ -44,15 +46,17 @@ data class HttpRequest(
         var result = method.hashCode()
         result = 31 * result + uri.hashCode()
         result = 31 * result + (body?.contentHashCode() ?: 0)
+        result = 31 * result + connection.hashCode()
         return result
     }
 
     companion object {
 
         fun from(call: MethodCall): HttpRequest {
-            val method = call.argument<String>("method") ?: "GET"
-            val uri = requireNotNull(call.argument<String>("uri"))
-            return HttpRequest(method, uri, null)
+            val method = call.stringOrNull("method") ?: "GET"
+            val uri = call.stringNotBlank("uri")
+            val connection = call.json<HttpConnection>("connection") ?: HttpConnection.DEFAULT
+            return HttpRequest(method, uri, null, connection)
         }
     }
 }
