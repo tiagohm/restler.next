@@ -1,6 +1,5 @@
 import br.tiagohm.restler.http.HttpCallHandler
 import br.tiagohm.restler.http.HttpConnection
-import br.tiagohm.restler.http.HttpResponse
 import br.tiagohm.restler.http.JSON
 import com.intuit.karate.core.MockServer
 import io.flutter.plugin.common.MethodCall
@@ -34,18 +33,20 @@ class HttpPluginTest {
         return callMethod("cancel", args, delay)
     }
 
+    private fun makeUUID() = UUID.randomUUID().toString()
+
     @Test
     fun simple() {
-        val args = mapOf("uri" to "http://localhost:8080/name")
+        val args = mapOf("uri" to "http://localhost:8080/hello")
         val result = execute(args)
-        verify(result, times(1)).success(HttpResponse(200, "Anonymous".toByteArray()))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, "Hello Anonymous!")))
     }
 
     @Test
     fun queryParameter() {
-        val args = mapOf("uri" to "http://localhost:8080/name?name=Tiago")
+        val args = mapOf("uri" to "http://localhost:8080/hello?name=Tiago")
         val result = execute(args)
-        verify(result, times(1)).success(HttpResponse(200, "Tiago".toByteArray()))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, "Hello Tiago!")))
     }
 
     @Test
@@ -63,7 +64,7 @@ class HttpPluginTest {
         for (status in statuses) {
             val args = mapOf("uri" to "http://localhost:8080/status?status=$status")
             val result = execute(args)
-            verify(result, times(1)).success(HttpResponse(status, "OK".toByteArray()))
+            verify(result, times(1)).success(argThat(HttpResponseMatcher(status, "OK")))
         }
     }
 
@@ -72,7 +73,7 @@ class HttpPluginTest {
         val connection = JSON.writeValueAsString(HttpConnection(followRedirects = false))
         val args = mapOf("uri" to "http://localhost:8080/redirect?count=2", "connection" to connection)
         val result = execute(args)
-        verify(result, times(1)).success(HttpResponse(307, "OK 2".toByteArray()))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(307, "OK 2")))
     }
 
     @Test
@@ -80,16 +81,25 @@ class HttpPluginTest {
         val connection = JSON.writeValueAsString(HttpConnection(followRedirects = true))
         val args = mapOf("uri" to "http://localhost:8080/redirect?count=2", "connection" to connection)
         val result = execute(args)
-        verify(result, times(1)).success(HttpResponse(200, "OK 0".toByteArray()))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, "OK 0")))
     }
 
     @Test
     fun cancel() {
-        val uid = UUID.randomUUID().toString()
-        val args = mapOf("uid" to uid, "uri" to "http://localhost:8080/delay?delay=5")
+        val id = makeUUID()
+        val args = mapOf("id" to id, "uri" to "http://localhost:8080/delay?delay=5")
         thread { sleep(2000L); cancel(args) }
         val result = execute(args, 5000L)
         verify(result, times(1)).error(eq("ERROR"), eq("cancel"), eq(null))
+    }
+
+    @Test
+    fun headers() {
+        val id = makeUUID()
+        val headers = listOf("x-auth-token", "AKF50GJ4JG9IE4JIFJI", "content-type", "application/json")
+        val args = mapOf("id" to id, "uri" to "http://localhost:8080/headers", "headers" to headers)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, headers = headers)))
     }
 
     companion object {

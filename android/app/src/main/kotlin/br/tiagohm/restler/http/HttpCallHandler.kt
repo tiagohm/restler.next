@@ -4,7 +4,6 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import okhttp3.*
-import okhttp3.internal.EMPTY_BYTE_ARRAY
 import java.io.IOException
 import java.util.concurrent.*
 
@@ -36,11 +35,10 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         try {
             when (call.method) {
                 "execute" -> execute(HttpRequest.from(call), OneShotResult(result))
-                "cancel" -> cancel(call.stringNotBlank("uid"), result)
+                "cancel" -> cancel(call.string("id")!!, result)
                 else -> return result.notImplemented()
             }
         } catch (e: Throwable) {
-            e.printStackTrace()
             result.error("ERROR", e.message, null)
         }
     }
@@ -68,17 +66,17 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
         val request = httpRequest.toRequest()
         val call = client.newCall(request)
 
-        httpRequest.uid?.also { cancellableCall[it] = call to result }
+        httpRequest.id?.also { cancellableCall[it] = call to result }
 
         val callback = HttpCallback(httpRequest, result)
         call.enqueue(callback)
     }
 
     private fun cancel(
-        uid: String,
+        id: String,
         result: MethodChannel.Result,
     ) {
-        val (call, callResult) = cancellableCall[uid] ?: return result.success(null)
+        val (call, callResult) = cancellableCall[id] ?: return result.success(null)
 
         synchronized(call) {
             if (!call.isCanceled()) {
@@ -109,14 +107,13 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
             call: Call,
             response: Response,
         ) {
-            val body = response.body?.bytes() ?: EMPTY_BYTE_ARRAY
-            result.success(HttpResponse(response.code, body))
+            result.success(HttpResponse.from(response))
             onComplete(call)
         }
 
         private fun onComplete(call: Call) {
             synchronized(call) {
-                cancellableCall.remove(httpRequest.uid)
+                cancellableCall.remove(httpRequest.id)
             }
         }
     }

@@ -2,15 +2,11 @@
 
 Feature: Http Server
 
-    Background:
-        * configure cors = true
-        * def sleep = function(s) { java.lang.Thread.sleep(parseInt(s) * 1000) }
-
-    Scenario: pathMatches('/name') && methodIs('GET')
-        * def response = requestParams.name ? requestParams.name[0] : 'Anonymous'
+    Scenario: pathMatches('/hello') && methodIs('GET')
+        * def response = 'Hello ' + (requestParams.name ? requestParams.name[0] : 'Anonymous') + '!'
 
     Scenario: pathMatches('/delay') && methodIs('GET')
-        * sleep(requestParams.delay)
+        * def responseDelay = parseInt(requestParams.delay) * 1000
         * def response = 'OK'
 
     Scenario: pathMatches('/status') && methodIs('GET')
@@ -22,3 +18,7 @@ Feature: Http Server
         * def location = `/redirect?count=${parseInt(requestParams.count) - 1}`
         * def responseHeaders = { 'Location': #(location) }
         * def response = `OK ${parseInt(requestParams.count)}`
+
+    Scenario: pathMatches('/headers') && methodIs('GET')
+        * def responseHeaders = requestHeaders
+        * def response = 'OK'
