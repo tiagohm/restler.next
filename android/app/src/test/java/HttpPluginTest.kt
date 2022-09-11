@@ -1,9 +1,4 @@
-import br.tiagohm.restler.http.HttpCallHandler
-import br.tiagohm.restler.http.HttpConnection
-import br.tiagohm.restler.http.HttpRequestBody
-import br.tiagohm.restler.http.HttpRequestBody.FormItem
-import br.tiagohm.restler.http.HttpRequestBody.MultipartItem
-import br.tiagohm.restler.http.JSON
+import br.tiagohm.restler.http.*
 import com.intuit.karate.core.MockServer
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -127,7 +122,7 @@ class HttpPluginTest {
 
     @Test
     fun formBody() {
-        val form = listOf(FormItem("username", "tiago"), FormItem("password", "12345678"))
+        val form = listOf(HttpFormItem("username", "tiago"), HttpFormItem("password", "12345678"))
         val headers = listOf("content-type", "application/x-www-form-urlencodekd")
         val body = JSON.writeValueAsString(HttpRequestBody.form(form))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/form", "headers" to headers, "body" to body)
@@ -137,7 +132,7 @@ class HttpPluginTest {
 
     @Test
     fun multipartBodyWithoutFile() {
-        val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"))
+        val multipart = listOf(HttpMultipartItem.text("username", "tiago"), HttpMultipartItem.text("password", "12345678"))
         val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
         val result = execute(args)
@@ -147,7 +142,7 @@ class HttpPluginTest {
     @Test
     fun multipartBodyWithFile() {
         val filepath = path("avatar.png").toString()
-        val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"), MultipartItem.file("avatar", filepath))
+        val multipart = listOf(HttpMultipartItem.text("username", "tiago"), HttpMultipartItem.text("password", "12345678"), HttpMultipartItem.file("avatar", filepath))
         val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
         val result = execute(args)
@@ -157,7 +152,7 @@ class HttpPluginTest {
     @Test
     fun multipartBodyWithFileAndName() {
         val filepath = path("avatar.png").toString()
-        val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"), MultipartItem.file("avatar", filepath, "profile.png"))
+        val multipart = listOf(HttpMultipartItem.text("username", "tiago"), HttpMultipartItem.text("password", "12345678"), HttpMultipartItem.file("avatar", filepath, "profile.png"))
         val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
         val result = execute(args)

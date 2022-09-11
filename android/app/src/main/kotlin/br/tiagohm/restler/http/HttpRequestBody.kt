@@ -4,40 +4,9 @@ data class HttpRequestBody(
     val type: HttpRequestBodyType,
     val text: String? = null,
     val file: String? = null,
-    val form: List<FormItem> = emptyList(),
-    val multipart: List<MultipartItem> = emptyList(),
+    val form: List<HttpFormItem> = emptyList(),
+    val multipart: List<HttpMultipartItem> = emptyList(),
 ) {
-
-    data class FormItem(
-        val name: String,
-        val value: String,
-    )
-
-    enum class MultipartType {
-        TEXT,
-        FILE,
-    }
-
-    data class MultipartItem(
-        val type: MultipartType,
-        val name: String,
-        val value: String,
-        val filename: String = "",
-        val headers: List<String> = emptyList(),
-    ) {
-
-        companion object {
-
-            fun text(name: String, value: String) = MultipartItem(MultipartType.TEXT, name, value)
-
-            fun file(
-                name: String,
-                filepath: String,
-                filename: String = "",
-                headers: List<String> = emptyList(),
-            ) = MultipartItem(MultipartType.FILE, name, filepath, filename, headers)
-        }
-    }
 
     companion object {
 
@@ -47,8 +16,8 @@ data class HttpRequestBody(
 
         fun file(path: String) = HttpRequestBody(HttpRequestBodyType.FILE, file = path)
 
-        fun form(form: List<FormItem>) = HttpRequestBody(HttpRequestBodyType.FORM, form = form)
+        fun form(form: List<HttpFormItem>) = HttpRequestBody(HttpRequestBodyType.FORM, form = form)
 
-        fun multipart(multipart: List<MultipartItem>) = HttpRequestBody(HttpRequestBodyType.MULTIPART, multipart = multipart)
+        fun multipart(multipart: List<HttpMultipartItem>) = HttpRequestBody(HttpRequestBodyType.MULTIPART, multipart = multipart)
     }
 }

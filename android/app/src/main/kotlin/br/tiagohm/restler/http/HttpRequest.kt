@@ -48,7 +48,7 @@ data class HttpRequest(
         builder.setType(MultipartBody.FORM)
 
         body!!.multipart.forEach {
-            if (it.type == HttpRequestBody.MultipartType.TEXT) {
+            if (it.type == HttpMultipartType.TEXT) {
                 builder.addFormDataPart(it.name, it.value)
             } else {
                 val file = File(it.value)
