@@ -54,6 +54,7 @@ class HttpCallHandler : MethodChannel.MethodCallHandler {
             .readTimeout(connection.readTimeout, TimeUnit.MILLISECONDS)
             .writeTimeout(connection.writeTimeout, TimeUnit.MILLISECONDS)
             .connectionPool(connectionPool)
+            .addInterceptor(GzipBrotliDeflateInterceptor)
             .build()
             .also { cachedHttpClient[connection] = it }
     }

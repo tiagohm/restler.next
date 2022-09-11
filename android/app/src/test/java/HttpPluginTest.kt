@@ -12,10 +12,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.*
 import org.robolectric.RobolectricTestRunner
-import java.io.File
 import java.lang.Thread.sleep
+import java.nio.file.Paths
 import java.util.*
 import kotlin.concurrent.thread
+import kotlin.io.path.readBytes
 
 @RunWith(RobolectricTestRunner::class)
 class HttpPluginTest {
@@ -145,7 +146,7 @@ class HttpPluginTest {
 
     @Test
     fun multipartBodyWithFile() {
-        val filepath = System.getProperty("user.dir")!!.plus("/src/test/resources/avatar.png")
+        val filepath = path("avatar.png").toString()
         val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"), MultipartItem.file("avatar", filepath))
         val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
@@ -155,7 +156,7 @@ class HttpPluginTest {
 
     @Test
     fun multipartBodyWithFileAndName() {
-        val filepath = System.getProperty("user.dir")!!.plus("/src/test/resources/avatar.png")
+        val filepath = path("avatar.png").toString()
         val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"), MultipartItem.file("avatar", filepath, "profile.png"))
         val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
@@ -165,11 +166,32 @@ class HttpPluginTest {
 
     @Test
     fun fileBody() {
-        val filepath = System.getProperty("user.dir")!!.plus("/src/test/resources/avatar.png")
+        val filepath = path("avatar.png").toString()
         val body = JSON.writeValueAsString(HttpRequestBody.file(filepath))
         val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/raw", "body" to body)
         val result = execute(args)
-        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, File(filepath).readBytes())))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, bytes("avatar.png"))))
+    }
+
+    @Test
+    fun brotli() {
+        val args = mapOf("uri" to "http://localhost:8080/brotli")
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, loremIpsum("txt"))))
+    }
+
+    @Test
+    fun gzip() {
+        val args = mapOf("uri" to "http://localhost:8080/gzip")
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, loremIpsum("txt"))))
+    }
+
+    @Test
+    fun deflate() {
+        val args = mapOf("uri" to "http://localhost:8080/deflate")
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, loremIpsum("txt"))))
     }
 
     companion object {
@@ -179,5 +201,14 @@ class HttpPluginTest {
         fun setUp() {
             MockServer.feature("classpath:server.feature").http(8080).build()
         }
+
+        @JvmStatic
+        fun path(path: String) = Paths.get(System.getProperty("user.dir"), "/src/test/resources", path)!!
+
+        @JvmStatic
+        fun bytes(path: String) = path(path).readBytes()
+
+        @JvmStatic
+        fun loremIpsum(extension: String) = bytes("lorem-ipsum.$extension")
     }
 }

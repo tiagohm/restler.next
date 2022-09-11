@@ -37,3 +37,18 @@ Feature: Http Server
 
     Scenario: pathMatches('/raw') && methodIs('POST')
         * def response = requestBytes
+
+    Scenario: pathMatches('/brotli') && methodIs('GET')
+        * def body = Java.type('HttpPluginTest').loremIpsum('br')
+        * def responseHeaders = { 'content-type': 'text/plain', 'content-encoding': 'br' }
+        * def response = body
+
+    Scenario: pathMatches('/gzip') && methodIs('GET')
+        * def body = Java.type('HttpPluginTest').loremIpsum('gz')
+        * def responseHeaders = { 'content-type': 'text/plain', 'content-encoding': 'gzip' }
+        * def response = body
+
+    Scenario: pathMatches('/deflate') && methodIs('GET')
+        * def body = Java.type('HttpPluginTest').loremIpsum('deflate')
+        * def responseHeaders = { 'content-type': 'text/plain', 'content-encoding': 'deflate' }
+        * def response = body
