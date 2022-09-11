@@ -30,6 +30,10 @@ data class HttpResponse(
         return result
     }
 
+    override fun toString(): String {
+        return "HttpResponse(code=$code, body=${body.decodeToString()}, headers=$headers)"
+    }
+
     companion object {
 
         private fun Headers.toList(): List<String> {

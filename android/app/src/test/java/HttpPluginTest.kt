@@ -1,5 +1,8 @@
 import br.tiagohm.restler.http.HttpCallHandler
 import br.tiagohm.restler.http.HttpConnection
+import br.tiagohm.restler.http.HttpRequestBody
+import br.tiagohm.restler.http.HttpRequestBody.FormItem
+import br.tiagohm.restler.http.HttpRequestBody.MultipartItem
 import br.tiagohm.restler.http.JSON
 import com.intuit.karate.core.MockServer
 import io.flutter.plugin.common.MethodCall
@@ -9,6 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.*
 import org.robolectric.RobolectricTestRunner
+import java.io.File
 import java.lang.Thread.sleep
 import java.util.*
 import kotlin.concurrent.thread
@@ -39,14 +43,14 @@ class HttpPluginTest {
     fun simple() {
         val args = mapOf("uri" to "http://localhost:8080/hello")
         val result = execute(args)
-        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, "Hello Anonymous!")))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, "Hello Anonymous!")))
     }
 
     @Test
     fun queryParameter() {
         val args = mapOf("uri" to "http://localhost:8080/hello?name=Tiago")
         val result = execute(args)
-        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, "Hello Tiago!")))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, "Hello Tiago!")))
     }
 
     @Test
@@ -64,7 +68,7 @@ class HttpPluginTest {
         for (status in statuses) {
             val args = mapOf("uri" to "http://localhost:8080/status?status=$status")
             val result = execute(args)
-            verify(result, times(1)).success(argThat(HttpResponseMatcher(status, "OK")))
+            verify(result, times(1)).success(argThat(HttpResponseMatcher.string(status, "OK")))
         }
     }
 
@@ -73,7 +77,7 @@ class HttpPluginTest {
         val connection = JSON.writeValueAsString(HttpConnection(followRedirects = false))
         val args = mapOf("uri" to "http://localhost:8080/redirect?count=2", "connection" to connection)
         val result = execute(args)
-        verify(result, times(1)).success(argThat(HttpResponseMatcher(307, "OK 2")))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(307, "OK 2")))
     }
 
     @Test
@@ -81,13 +85,12 @@ class HttpPluginTest {
         val connection = JSON.writeValueAsString(HttpConnection(followRedirects = true))
         val args = mapOf("uri" to "http://localhost:8080/redirect?count=2", "connection" to connection)
         val result = execute(args)
-        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, "OK 0")))
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, "OK 0")))
     }
 
     @Test
     fun cancel() {
-        val id = makeUUID()
-        val args = mapOf("id" to id, "uri" to "http://localhost:8080/delay?delay=5")
+        val args = mapOf("id" to makeUUID(), "uri" to "http://localhost:8080/delay?delay=5")
         thread { sleep(2000L); cancel(args) }
         val result = execute(args, 5000L)
         verify(result, times(1)).error(eq("ERROR"), eq("cancel"), eq(null))
@@ -95,11 +98,78 @@ class HttpPluginTest {
 
     @Test
     fun headers() {
-        val id = makeUUID()
         val headers = listOf("x-auth-token", "AKF50GJ4JG9IE4JIFJI", "content-type", "application/json")
-        val args = mapOf("id" to id, "uri" to "http://localhost:8080/headers", "headers" to headers)
+        val args = mapOf("uri" to "http://localhost:8080/headers", "headers" to headers)
         val result = execute(args)
         verify(result, times(1)).success(argThat(HttpResponseMatcher(200, headers = headers)))
+    }
+
+    @Test
+    fun jsonTextBody() {
+        val text = JSON.writeValueAsString(mapOf("name" to "Tiago"))
+        val headers = listOf("content-type", "application/json")
+        val body = JSON.writeValueAsString(HttpRequestBody.text(text))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/text", "headers" to headers, "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, text, headers)))
+    }
+
+    @Test
+    fun plainTextBody() {
+        val text = JSON.writeValueAsString(mapOf("name" to "Tiago"))
+        val headers = listOf("content-type", "text/plain")
+        val body = JSON.writeValueAsString(HttpRequestBody.text(text))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/text", "headers" to headers, "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, text, headers)))
+    }
+
+    @Test
+    fun formBody() {
+        val form = listOf(FormItem("username", "tiago"), FormItem("password", "12345678"))
+        val headers = listOf("content-type", "application/x-www-form-urlencodekd")
+        val body = JSON.writeValueAsString(HttpRequestBody.form(form))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/form", "headers" to headers, "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, """{"password":["12345678"],"username":["tiago"]}""")))
+    }
+
+    @Test
+    fun multipartBodyWithoutFile() {
+        val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"))
+        val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, """{"params":{"password":["12345678"],"username":["tiago"]},"parts":{},"type":"multipart\/form-data;""")))
+    }
+
+    @Test
+    fun multipartBodyWithFile() {
+        val filepath = System.getProperty("user.dir")!!.plus("/src/test/resources/avatar.png")
+        val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"), MultipartItem.file("avatar", filepath))
+        val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, """{"params":{"password":["12345678"],"username":["tiago"]},"parts":{"avatar":[{"charset":"UTF-8","filename":"avatar.png","transferEncoding":"7bit","name":"avatar","contentType":"application/octet-stream","value":"""")))
+    }
+
+    @Test
+    fun multipartBodyWithFileAndName() {
+        val filepath = System.getProperty("user.dir")!!.plus("/src/test/resources/avatar.png")
+        val multipart = listOf(MultipartItem.text("username", "tiago"), MultipartItem.text("password", "12345678"), MultipartItem.file("avatar", filepath, "profile.png"))
+        val body = JSON.writeValueAsString(HttpRequestBody.multipart(multipart))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/multipart", "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher.string(200, """{"params":{"password":["12345678"],"username":["tiago"]},"parts":{"avatar":[{"charset":"UTF-8","filename":"profile.png","transferEncoding":"7bit","name":"avatar","contentType":"application/octet-stream","value":"""")))
+    }
+
+    @Test
+    fun fileBody() {
+        val filepath = System.getProperty("user.dir")!!.plus("/src/test/resources/avatar.png")
+        val body = JSON.writeValueAsString(HttpRequestBody.file(filepath))
+        val args = mapOf("method" to "POST", "uri" to "http://localhost:8080/raw", "body" to body)
+        val result = execute(args)
+        verify(result, times(1)).success(argThat(HttpResponseMatcher(200, File(filepath).readBytes())))
     }
 
     companion object {

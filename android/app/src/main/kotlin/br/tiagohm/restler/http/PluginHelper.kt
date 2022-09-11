@@ -9,7 +9,7 @@ internal val JSON = jacksonObjectMapper()
 
 inline fun MethodCall.string(key: String) = argument<String>(key)
 
-inline fun <reified T : Enum<T>> MethodCall.enum(key: String) = enumValueOf<T>(string(key)!!)
+inline fun <reified T : Enum<T>> MethodCall.enum(key: String) = string(key)?.uppercase()?.let { enumValueOf<T>(it) }
 
 inline fun <T> MethodCall.list(key: String) = argument<List<T>>(key)
 

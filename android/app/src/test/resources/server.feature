@@ -22,3 +22,18 @@ Feature: Http Server
     Scenario: pathMatches('/headers') && methodIs('GET')
         * def responseHeaders = requestHeaders
         * def response = 'OK'
+
+    Scenario: pathMatches('/text') && methodIs('POST')
+        * def type = requestHeaders['content-type'][0]
+        * def responseHeaders = { 'content-type': #(type) }
+        * def response = request
+
+    Scenario: pathMatches('/form') && methodIs('POST')
+        * def response = requestParams
+
+    Scenario: pathMatches('/multipart') && methodIs('POST')
+        * def type = requestHeaders['content-type'][0]
+        * def response = { params: #(requestParams), parts: #(requestParts), type: #(type) }
+
+    Scenario: pathMatches('/raw') && methodIs('POST')
+        * def response = requestBytes
