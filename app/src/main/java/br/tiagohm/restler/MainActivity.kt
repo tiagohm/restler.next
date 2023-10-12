@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import br.tiagohm.restler.ui.page.HomeMenuItem
 import br.tiagohm.restler.ui.page.HomePage
 import br.tiagohm.restler.ui.theme.RestlerTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,10 +42,10 @@ class MainActivity : ComponentActivity() {
                         drawerState = drawerState,
                         drawerContent = {
                             ModalDrawerSheet {
-                                Text("Drawer title", modifier = Modifier.padding(16.dp))
+                                Text("Restler", modifier = Modifier.padding(16.dp))
                                 Divider()
                                 NavigationDrawerItem(
-                                    label = { Text(text = "Drawer Item") },
+                                    label = { Text("Drawer Item") },
                                     selected = false,
                                     onClick = { }
                                 )
