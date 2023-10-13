@@ -15,6 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
+import br.tiagohm.restler.ui.component.IconSpacer
+import br.tiagohm.restler.ui.theme.CheckIcon
+import br.tiagohm.restler.ui.theme.CloseIcon
 
 @Composable
 fun TextFieldDialog(
@@ -49,6 +52,8 @@ fun TextFieldDialog(
                 enabled = !error,
                 onClick = { onConfirm(value) }
             ) {
+                CheckIcon()
+                IconSpacer()
                 Text("OK")
             }
         },
@@ -56,6 +61,8 @@ fun TextFieldDialog(
             Button(
                 onClick = onDismiss
             ) {
+                CloseIcon()
+                IconSpacer()
                 Text("Cancel")
             }
         }

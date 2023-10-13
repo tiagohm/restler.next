@@ -1,6 +1,5 @@
 package br.tiagohm.restler.logic.lifecycle
 
-import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -11,13 +10,10 @@ import br.tiagohm.restler.logic.enumeration.RequestAuthType
 import br.tiagohm.restler.logic.enumeration.RequestBodyType
 import br.tiagohm.restler.logic.enumeration.RequestProtocolType
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    @ApplicationContext val appContext: Context,
-) : ViewModel() {
+class HomeViewModel @Inject constructor() : ViewModel() {
 
     var method by mutableStateOf("GET")
     var protocol by mutableStateOf(RequestProtocolType.HTTP)
@@ -50,6 +46,7 @@ class HomeViewModel @Inject constructor(
         requestHeaderEnabled = true
         requestAuthEnabled = false
         requestAuthType = RequestAuthType.NONE
+        requestBodyFile = null
         responseStatus = 0
         responseTime = 0
         responseLength = 0
