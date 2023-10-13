@@ -17,7 +17,6 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import br.tiagohm.restler.ui.page.HomeMenuItem
 import br.tiagohm.restler.ui.page.HomePage
 import br.tiagohm.restler.ui.theme.RestlerTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,23 +51,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     ) {
-                        HomePage(onMenuItemClick = {
-                            when (it) {
-                                HomeMenuItem.MENU -> {
-                                    scope.launch {
-                                        drawerState.apply {
-                                            if (isClosed) open() else close()
-                                        }
-                                    }
+                        HomePage(onNavigationIconClick = {
+                            scope.launch {
+                                drawerState.apply {
+                                    if (isClosed) open() else close()
                                 }
-
-                                HomeMenuItem.SEND -> Unit
-                                HomeMenuItem.NEW_TAB -> Unit
-                                HomeMenuItem.DUPLICATE_TAB -> Unit
-                                HomeMenuItem.RESTORE_TAB -> Unit
-                                HomeMenuItem.CLEAR -> Unit
-                                HomeMenuItem.SAVE_AS -> Unit
-                                HomeMenuItem.SETTINGS -> Unit
                             }
                         })
                     }

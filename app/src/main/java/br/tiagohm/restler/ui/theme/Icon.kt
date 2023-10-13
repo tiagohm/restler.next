@@ -26,3 +26,9 @@ fun CallMadeIcon() = ResourceIcon(id = R.drawable.call_made)
 
 @Composable
 fun CallReceivedIcon() = ResourceIcon(id = R.drawable.call_received)
+
+@Composable
+fun FolderOpenIcon() = ResourceIcon(id = R.drawable.folder_open)
+
+@Composable
+fun FileDocumentIcon() = ResourceIcon(id = R.drawable.file_document)

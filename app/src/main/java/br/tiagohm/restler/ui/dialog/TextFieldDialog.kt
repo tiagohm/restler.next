@@ -20,20 +20,24 @@ import androidx.compose.ui.text.input.KeyboardType
 fun TextFieldDialog(
     initialValue: String,
     title: @Composable () -> Unit, label: @Composable () -> Unit,
-    onConfirm: (String) -> Unit, onDismiss: (Boolean) -> Unit,
+    onConfirm: (String) -> Unit, onDismiss: () -> Unit,
+    singleLine: Boolean = true,
 ) {
     var value by remember { mutableStateOf(initialValue) }
+    var error by remember { mutableStateOf(false) }
 
     AlertDialog(
-        onDismissRequest = { onDismiss(false) },
+        onDismissRequest = onDismiss,
         title = title,
         text = {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = value,
-                onValueChange = { value = it },
+                onValueChange = { value = it; error = value.isBlank() },
                 label = label,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                singleLine = singleLine,
+                isError = error,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent
@@ -42,6 +46,7 @@ fun TextFieldDialog(
         },
         confirmButton = {
             Button(
+                enabled = !error,
                 onClick = { onConfirm(value) }
             ) {
                 Text("OK")
@@ -49,7 +54,7 @@ fun TextFieldDialog(
         },
         dismissButton = {
             Button(
-                onClick = { onDismiss(true) }
+                onClick = onDismiss
             ) {
                 Text("Cancel")
             }
